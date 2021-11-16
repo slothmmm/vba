@@ -1,6 +1,6 @@
 Sub csv出力_main()
 Dim sheet1 As Worksheet
-    Worksheets("Sheet1").Calculate    '再計算
+    Worksheets("小分け品").Calculate    '再計算
     Application.Calculation = xlCalculationManual     '手動計算
     Application.ScreenUpdating = False    '画面更新停止
     Set sheet1 = Worksheets("小分け品")
