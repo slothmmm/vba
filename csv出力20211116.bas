@@ -1,5 +1,6 @@
 Sub csv出力_main()
-Dim sheet1 As Worksheet
+    call Microsoft_Scripting_Runtime
+    Dim sheet1 As Worksheet
     Worksheets("小分け品").Calculate    '再計算
     Application.Calculation = xlCalculationManual     '手動計算
     Application.ScreenUpdating = False    '画面更新停止
@@ -48,3 +49,5 @@ Sub csv出力処理(ByVal sht As Worksheet, Optional ByVal rngStart As Range = N
     Application.DisplayAlerts = True
     MsgBox ("CSV出力しました。" & vbLf & vbLf & varFile)
 End Sub
+
+
