@@ -1,0 +1,63 @@
+Sub 原料明細印刷()
+
+    msg = "以下を印刷します。" & vbNewLine & _
+          "1.加工一覧 3部" & vbNewLine & _
+          "2.野菜払い出し一覧 1部" & vbNewLine & _
+          "" & vbNewLine & _
+           "用紙サイズ：A3"
+    kesu = MsgBox(msg, 1, "野菜使用量明細印刷")
+    If kesu = 2 Then
+    Exit Sub
+    End If
+    Application.ScreenUpdating = False
+    Sheets("加工量").Select
+    
+    
+    ActiveWorkbook.Worksheets("加工量").AutoFilter.Sort.SortFields.Clear
+    ActiveWorkbook.Worksheets("加工量").AutoFilter.Sort.SortFields.Add Key:=Range( _
+        "F6"), SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:= _
+        xlSortNormal
+    With ActiveWorkbook.Worksheets("加工量").AutoFilter.Sort
+        .Header = xlYes
+        .MatchCase = False
+        .Orientation = xlTopToBottom
+        .SortMethod = xlPinYin
+        .Apply
+    End With
+    ActiveWorkbook.Worksheets("加工量").AutoFilter.Sort.SortFields.Clear
+    ActiveWorkbook.Worksheets("加工量").AutoFilter.Sort.SortFields.Add Key:=Range( _
+        "E6"), SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:= _
+        xlSortNormal
+    With ActiveWorkbook.Worksheets("加工量").AutoFilter.Sort
+        .Header = xlYes
+        .MatchCase = False
+        .Orientation = xlTopToBottom
+        .SortMethod = xlPinYin
+        .Apply
+    End With
+    
+    ActiveSheet.Range("L6").AutoFilter Field:=13, Criteria1:="<>"
+    ActiveWindow.SelectedSheets.PrintOut Copies:=3, Collate:=True, _
+        IgnorePrintAreas:=False
+    ActiveSheet.Range("L6").AutoFilter Field:=13
+    
+    ActiveWorkbook.Worksheets("加工量").AutoFilter.Sort.SortFields.Clear
+    ActiveWorkbook.Worksheets("加工量").AutoFilter.Sort.SortFields.Add Key:=Range( _
+        "A6"), SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:= _
+        xlSortNormal
+    With ActiveWorkbook.Worksheets("加工量").AutoFilter.Sort
+        .Header = xlYes
+        .MatchCase = False
+        .Orientation = xlTopToBottom
+        .SortMethod = xlPinYin
+        .Apply
+    End With
+    
+    Sheets("野菜払い出し").Select
+    ActiveSheet.Range("A4").AutoFilter Field:=1, Criteria1:="<>"
+    ActiveWindow.SelectedSheets.PrintOut Copies:=2, Collate:=True, _
+        IgnorePrintAreas:=False
+    ActiveSheet.Range("A4").AutoFilter Field:=1
+    Sheets("受注入力").Select
+    Application.ScreenUpdating = True
+End Sub
