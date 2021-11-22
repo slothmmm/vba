@@ -3,16 +3,17 @@ Sub csv出力_1シート_main()
     '例 csv_sh_name = "商品マスター"
     csv_sh_name = ""
     
-    call Microsoft_Scripting_Runtime    '参照設定の追加
+    Call Microsoft_Scripting_Runtime    '参照設定の追加
     
     '再計算
-    Worksheets(csv_sh_name).Calculate  
+    Worksheets(csv_sh_name).Calculate
     
     Application.Calculation = xlCalculationManual     '手動計算
     Application.ScreenUpdating = False    '画面更新停止
 
     Dim sheet1 As Worksheet
     Set sheet1 = Worksheets(csv_sh_name)
+       
     Call csv出力処理(sheet1)
 
     Application.Calculation = xlCalculationAutomatic  '自動計算
@@ -30,7 +31,7 @@ Sub csv出力処理(ByVal sht As Worksheet)
         MkDir SaveDir
     End If
 
-    varFile = SaveDir & "\" & Left(ThisWorkbook.Name, Len(ThisWorkbook.Name) - 5) & ".csv"
+    varFile = SaveDir & "\" & Left(ThisWorkbook.Name, Len(ThisWorkbook.Name) - 5) & "_" & Trim(sht.Name) & ".csv"
     
     '↓これ見直し必要かも。emptyとかエラーの場合とか。そもそも要らないかも。
     If varFile = False Then
