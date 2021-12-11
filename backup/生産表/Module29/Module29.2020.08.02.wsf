@@ -1,0 +1,3960 @@
+Sub セル移動()
+
+'************** セル移動 ********* 受注入力用 ******* 開始 *******
+'*****************************************************************
+'宣言
+    Dim fKey As String, fKey2 As String, fRange As Range, _
+        fRange2 As Range, ans As String, ret As VbMsgBoxResult, _
+        ret2 As VbMsgBoxResult
+        
+'キーワード入力
+    Do
+    ans = InputBox("検索キーワードを入力してください。", "セル移動", "入力例 ：　ヨーカドー")
+    If StrPtr(ans) = 0 Then Exit Sub
+  
+    If ans <> "" Then
+    Else
+    GoTo jobskip
+    End If
+    
+'セル位置検索1回目
+    fKey = "*" & ans & "*"
+    Set fRange = Range("B3:B1000").Find(What:=fKey, LookIn:=xlValues, LookAt:=xlPart, SearchOrder:=xlByRows)
+    If (fRange Is Nothing) Then
+jobskip:
+    ret = MsgBox("検索対象が見つかりません。" & vbNewLne & _
+                 "再検索しますか？", vbYesNo)
+    Select Case ret
+    Case vbNo: Exit Sub
+    End Select
+    Else
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    ActiveWindow.ScrollRow = fRange.Row
+    ActiveWindow.ScrollColumn = fRange.Column - 1
+    Exit Do
+    End If
+    Loop Until ret = vbNo
+    
+'セル位置検索2回目
+    ret2 = MsgBox(ans & "が見つかりました。" & vbNewLine & _
+                  ans & "でさらに検索しますか？", vbYesNo)
+    Select Case ret2
+    Case vbYes:
+    Set fRange2 = Range(Cells(fRange.Row, 2), Cells(1000, 2)).Find(What:=fKey, _
+                  LookIn:=xlValues, LookAt:=xlPart, SearchOrder:=xlByRows)
+    If (fRange2 Is Nothing) Then
+    Exit Sub
+    Else
+    Cells(fRange2.Row + 1, fRange2.Column + 2).Select
+    ActiveWindow.ScrollRow = fRange2.Row
+    ActiveWindow.ScrollColumn = fRange2.Column - 1
+    End If
+    Case vbNo: Exit Sub
+    End Select
+
+'************** セル移動 ********* 受注入力用 ******* 終了 *******
+'*****************************************************************
+End Sub
+Sub Protect()
+'」」」」」
+    ActiveSheet.Protect Password:="tetsuya0001", DrawingObjects:=True, Contents:=True, Scenarios:=True
+End Sub
+Sub UnProtect()
+'」」」」」
+    ActiveSheet.UnProtect Password:="tetsuya0001"
+End Sub
+Sub リンク更新()
+    
+    Call サンプルコピペ
+    
+    Application.ScreenUpdating = False
+
+    Call UnProtect
+
+    ActiveWorkbook.UpdateLink Name:=ActiveWorkbook.LinkSources
+
+    Call Protect
+    
+    ActiveWorkbook.Save
+
+Application.ScreenUpdating = True
+
+MsgBox "リンクの更新＆保存が完了しました → 次の処理へ進んでください"
+
+   Exit Sub
+End Sub
+Sub 自動処理セット()
+'」」」」」
+    Application.ScreenUpdating = False
+    Dim d As Date, msg As String, kesu As String
+    d = Range("A1")
+    msg = "生産表データ更新自動処理" & vbNewLine & _
+          "タイマーをセットします。" & vbNewLine & _
+          "" & vbNewLine & _
+          "　2回目 11：30　(約20分)" & vbNewLine & _
+          "　3回目 12：30　(約10分)" & vbNewLine & _
+          "　4回目 15：50　(約10分)" & vbNewLine & _
+          "　5回目 17：10　(約10分)"
+    kesu = MsgBox(msg, 1, "自動処理時間セット")
+    If kesu = 2 Then
+    GoTo skip
+    End If
+'最初の処理をセット
+    If Time < TimeValue("9:45:00") Then
+    Application.OnTime EarliestTime:=TimeValue("9:45:00"), _
+            Procedure:="自動1", LatestTime:=TimeValue("10:00:00")
+    Else
+    msg2 = "最初の設定時間を過ぎているため" & vbNewLine & _
+           "今すぐ最初の処理を実行します。"
+    kesu2 = MsgBox(msg2, 1, "自動処理時間セット")
+    If kesu2 = 2 Then
+    MsgBox "自動処理のセットを中止しました。"
+    GoTo skip
+    Else
+    Call 自動2
+    End If
+    End If
+    Range("C8").Formula = "自動"
+skip:
+    Application.ScreenUpdating = True
+'」」」」」
+End Sub
+Sub 自動処理解除()
+'」」」」」
+    Application.ScreenUpdating = False
+    If Range("C8") = "自動" Then
+    On Error Resume Next
+    Application.OnTime EarliestTime:=TimeValue("10:05:00"), _
+            Procedure:="マスター更新", Schedule:=False
+    Application.OnTime EarliestTime:=TimeValue("11:30:00"), _
+            Procedure:="自動2", Schedule:=False
+    Application.OnTime EarliestTime:=TimeValue("12:30:00"), _
+            Procedure:="自動3", Schedule:=False
+    
+    On Error GoTo 0
+    Range("C8").Select
+    Selection.ClearContents
+    MsgBox "生産表データ自動更新" & vbNewLine & _
+           "を解除しました。"
+    End If
+    Application.ScreenUpdating = True
+'」」」」」
+End Sub
+Sub マスター更新()
+'」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」
+'」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」
+    
+    Sheets("ロゴ2").Visible = True
+    Sheets("ロゴ2").Select
+    Application.Wait [Now() + "0:00:01"]
+    Application.ScreenUpdating = False
+    Sheets("ロゴ2").Visible = False
+    Sheets("受注入力").Select
+    Application.DisplayAlerts = False
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\生産管理\販売商品マスター.xlsm", UpdateLinks:=3
+    ActiveWorkbook.Close SaveChanges:=True
+    Application.DisplayAlerts = True
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+'次の処理をセット
+    If Time < TimeValue("11:30:00") Then
+    Application.OnTime EarliestTime:=TimeValue("11:30:00"), _
+            Procedure:="自動2", LatestTime:=TimeValue("11:45:00")
+    Else
+    Call 自動2
+    End If
+    Application.ScreenUpdating = True
+
+'」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」
+'」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」
+End Sub
+Sub 自動2()
+'」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」
+'」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」
+    
+    Sheets("ロゴ2").Visible = True
+    Sheets("ロゴ2").Select
+    Application.Wait [Now() + "0:00:01"]
+    Application.ScreenUpdating = False
+    Sheets("ロゴ2").Visible = False
+    Sheets("受注入力").Select
+'msgboxカットのために…
+    Range("N1").Select
+    ActiveCell.FormulaR1C1 = "1"
+    Call CGC更新
+    Call ヤオコー更新
+    Call セイミヤ更新
+    Call フレッセイ更新
+    Call 原信更新
+    Call 東武ストア更新
+    Call CGC北陸更新
+    Call イトーヨーカドー更新
+    Call コープデリ更新
+    Call ミニストップ更新
+    Call サミット更新
+    Call ライフ更新
+    Call オーケー更新
+'次の処理をセット
+    If Time < TimeValue("12:30:00") Then
+    Application.OnTime EarliestTime:=TimeValue("12:30:00"), _
+            Procedure:="自動3", LatestTime:=TimeValue("12:45:00")
+    Else
+    Call 自動3
+    End If
+'msgboxカットを元に戻す
+    Sheets("受注入力").Select
+    Range("N1").Select
+    Selection.ClearContents
+    Application.ScreenUpdating = True
+    
+'」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」
+'」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」
+End Sub
+Sub 自動3()
+'」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」
+'」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」
+
+    Sheets("ロゴ2").Visible = True
+    Sheets("ロゴ2").Select
+    Application.Wait [Now() + "0:00:01"]
+    Application.ScreenUpdating = False
+    Sheets("ロゴ2").Visible = False
+    Sheets("受注入力").Select
+    ActiveSheet.UnProtect Password:="tetsuya0001"
+    ActiveWorkbook.UpdateLink Name:="\\AFNEWT320-KYOYU\社内共有\AFSKS\生産管理\販売商品マスター.xlsm", _
+                              Type:=xlExcelLinks
+    ActiveSheet.Protect Password:="tetsuya0001", DrawingObjects:=True, Contents:=True, Scenarios:=True
+'msgboxカットのために…
+    Range("N1").Select
+    ActiveCell.FormulaR1C1 = "1"
+    Call 出荷日更新
+
+'msgboxカットを元に戻す
+    Sheets("受注入力").Select
+    Range("N1").Select
+    Selection.ClearContents
+    Application.ScreenUpdating = True
+    
+'」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」
+'」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」」
+End Sub
+Sub オーケー更新()
+
+'**********ピッキング表⇒生産表 データ更新********* 開始 *********
+'*****************************************************************
+    Application.ScreenUpdating = False
+    Dim koushin As String, sd As Date, fKey As String, fRange As Range
+    koushin = "オーケー_ピッキング表"
+    sd = Workbooks("生産表.xlsm").Sheets("受注入力").Range("A1")
+    fKey = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set fRange = Range("B:B").Find(What:=fKey, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    If (fRange Is Nothing) Then
+    MsgBox "　『" & fKey & "』" & "が見つかりません。" & _
+           "　生産表『B列』を確認してください。"
+    Exit Sub
+    Else
+    End If
+    
+'宣言
+    Dim pd As Date, dc As Integer, bpn As String, cpd As Integer, _
+        shukka As Integer, kensu As Integer
+    Dim 件数 As Integer, 箱キー As String, 箱レンジ As Range
+    箱キー = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set 箱レンジ = Worksheets("箱数履歴").Range("B:B"). _
+        Find(What:=箱キー, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 開始 」」」」」」」
+    If Range("N1") = 1 Then
+    Else
+    GoTo 通常処理
+    End If
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob7
+    End If
+    If dc > 0 Then
+    GoTo jobskip7
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob7:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    GoTo lastjob7
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    
+'出荷データコピー
+jobskip7:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.SumIf(Range("D:D"), 0)
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+          
+'【共通】最終処理
+lastjob7:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+Exit Sub
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 終了 」」」」」」」
+
+通常処理:
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob
+    End If
+    If dc > 0 Then
+    GoTo jobskip
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    GoTo lastjob
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    MsgBox "【要確認】出荷データに異常があります。" & vbNewLine & _
+           "日別保存データを確認してください。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    
+'出荷データコピー
+jobskip:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.Sum(Range("D:D"))
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+    
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+    MsgBox "【更新完了】" & vbNewLine & "　" & vbNewLine & _
+           "　対象名：" & fKey & vbNewLine & _
+           "　出荷日：" & sd & vbNewLine & "　出荷数：" & kensu
+          
+'【共通】最終処理
+lastjob:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+'*****************************************************************
+'**********ピッキング表⇒生産表 データ更新********* 終了 *********
+End Sub
+Sub ライフ更新()
+
+'**********ピッキング表⇒生産表 データ更新********* 開始 *********
+'*****************************************************************
+    Application.ScreenUpdating = False
+    Dim koushin As String, sd As Date, fKey As String, fRange As Range
+    koushin = "ライフ_ピッキング表"
+    sd = Workbooks("生産表.xlsm").Sheets("受注入力").Range("A1")
+    fKey = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set fRange = Range("B:B").Find(What:=fKey, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    If (fRange Is Nothing) Then
+    MsgBox "　『" & fKey & "』" & "が見つかりません。" & _
+           "　生産表『B列』を確認してください。"
+    Exit Sub
+    Else
+    End If
+    
+'宣言
+    Dim pd As Date, dc As Integer, bpn As String, cpd As Integer, _
+        shukka As Integer, kensu As Integer
+    Dim 件数 As Integer, 箱キー As String, 箱レンジ As Range
+    箱キー = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set 箱レンジ = Worksheets("箱数履歴").Range("B:B"). _
+        Find(What:=箱キー, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 開始 」」」」」」」
+    If Range("N1") = 1 Then
+    Else
+    GoTo 通常処理
+    End If
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob7
+    End If
+    If dc > 0 Then
+    GoTo jobskip7
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob7:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    GoTo lastjob7
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    
+'出荷データコピー
+jobskip7:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.SumIf(Range("D:D"), 0)
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+          
+'【共通】最終処理
+lastjob7:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+Exit Sub
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 終了 」」」」」」」
+
+通常処理:
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob
+    End If
+    If dc > 0 Then
+    GoTo jobskip
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    GoTo lastjob
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    MsgBox "【要確認】出荷データに異常があります。" & vbNewLine & _
+           "日別保存データを確認してください。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    
+'出荷データコピー
+jobskip:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.Sum(Range("D:D"))
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+    
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+    MsgBox "【更新完了】" & vbNewLine & "　" & vbNewLine & _
+           "　対象名：" & fKey & vbNewLine & _
+           "　出荷日：" & sd & vbNewLine & "　出荷数：" & kensu
+          
+'【共通】最終処理
+lastjob:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+'*****************************************************************
+'**********ピッキング表⇒生産表 データ更新********* 終了 *********
+End Sub
+Sub サミット更新()
+
+'**********ピッキング表⇒生産表 データ更新********* 開始 *********
+'*****************************************************************
+    Application.ScreenUpdating = False
+    Dim koushin As String, sd As Date, fKey As String, fRange As Range
+    koushin = "サミット_ピッキング表"
+    sd = Workbooks("生産表.xlsm").Sheets("受注入力").Range("A1")
+    fKey = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set fRange = Range("B:B").Find(What:=fKey, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    If (fRange Is Nothing) Then
+    MsgBox "　『" & fKey & "』" & "が見つかりません。" & _
+           "　生産表『B列』を確認してください。"
+    Exit Sub
+    Else
+    End If
+    
+'宣言
+    Dim pd As Date, dc As Integer, bpn As String, cpd As Integer, _
+        shukka As Integer, kensu As Integer
+    Dim 件数 As Integer, 箱キー As String, 箱レンジ As Range
+    箱キー = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set 箱レンジ = Worksheets("箱数履歴").Range("B:B"). _
+        Find(What:=箱キー, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 開始 」」」」」」」
+    If Range("N1") = 1 Then
+    Else
+    GoTo 通常処理
+    End If
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob7
+    End If
+    If dc > 0 Then
+    GoTo jobskip7
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob7:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    GoTo lastjob7
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    
+'出荷データコピー
+jobskip7:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.SumIf(Range("D:D"), 0)
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+          
+'【共通】最終処理
+lastjob7:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+Exit Sub
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 終了 」」」」」」」
+
+通常処理:
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob
+    End If
+    If dc > 0 Then
+    GoTo jobskip
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    GoTo lastjob
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    MsgBox "【要確認】出荷データに異常があります。" & vbNewLine & _
+           "日別保存データを確認してください。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    
+'出荷データコピー
+jobskip:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.Sum(Range("D:D"))
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+    
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+    MsgBox "【更新完了】" & vbNewLine & "　" & vbNewLine & _
+           "　対象名：" & fKey & vbNewLine & _
+           "　出荷日：" & sd & vbNewLine & "　出荷数：" & kensu
+          
+'【共通】最終処理
+lastjob:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+'*****************************************************************
+'**********ピッキング表⇒生産表 データ更新********* 終了 *********
+End Sub
+Sub ミニストップ更新()
+
+'**********ピッキング表⇒生産表 データ更新********* 開始 *********
+'*****************************************************************
+    Application.ScreenUpdating = False
+    Dim koushin As String, sd As Date, fKey As String, fRange As Range
+    koushin = "ミニストップ_ピッキング表"
+    sd = Workbooks("生産表.xlsm").Sheets("受注入力").Range("A1")
+    fKey = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set fRange = Range("B:B").Find(What:=fKey, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    If (fRange Is Nothing) Then
+    MsgBox "　『" & fKey & "』" & "が見つかりません。" & _
+           "　生産表『B列』を確認してください。"
+    Exit Sub
+    Else
+    End If
+    
+'宣言
+    Dim pd As Date, dc As Integer, bpn As String, cpd As Integer, _
+        shukka As Integer, kensu As Integer
+    Dim 件数 As Integer, 箱キー As String, 箱レンジ As Range
+    箱キー = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set 箱レンジ = Worksheets("箱数履歴").Range("B:B"). _
+        Find(What:=箱キー, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 開始 」」」」」」」
+    If Range("N1") = 1 Then
+    Else
+    GoTo 通常処理
+    End If
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob7
+    End If
+    If dc > 0 Then
+    GoTo jobskip7
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob7:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    GoTo lastjob7
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    
+'出荷データコピー
+jobskip7:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.SumIf(Range("D:D"), 0)
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+          
+'【共通】最終処理
+lastjob7:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+Exit Sub
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 終了 」」」」」」」
+
+通常処理:
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob
+    End If
+    If dc > 0 Then
+    GoTo jobskip
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    GoTo lastjob
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    MsgBox "【要確認】出荷データに異常があります。" & vbNewLine & _
+           "日別保存データを確認してください。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    
+'出荷データコピー
+jobskip:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.Sum(Range("D:D"))
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+    
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+    MsgBox "【更新完了】" & vbNewLine & "　" & vbNewLine & _
+           "　対象名：" & fKey & vbNewLine & _
+           "　出荷日：" & sd & vbNewLine & "　出荷数：" & kensu
+          
+'【共通】最終処理
+lastjob:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+'*****************************************************************
+'**********ピッキング表⇒生産表 データ更新********* 終了 *********
+End Sub
+Sub コープデリ更新()
+
+'**********ピッキング表⇒生産表 データ更新********* 開始 *********
+'*****************************************************************
+    Application.ScreenUpdating = False
+    Dim koushin As String, sd As Date, fKey As String, fRange As Range
+    koushin = "コープデリ_ピッキング表"
+    sd = Workbooks("生産表.xlsm").Sheets("受注入力").Range("A1")
+    fKey = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set fRange = Range("B:B").Find(What:=fKey, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    If (fRange Is Nothing) Then
+    MsgBox "　『" & fKey & "』" & "が見つかりません。" & _
+           "　生産表『B列』を確認してください。"
+    Exit Sub
+    Else
+    End If
+    
+'宣言
+    Dim pd As Date, dc As Integer, bpn As String, cpd As Integer, _
+        shukka As Integer, kensu As Integer
+    Dim 件数 As Integer, 箱キー As String, 箱レンジ As Range
+    箱キー = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set 箱レンジ = Worksheets("箱数履歴").Range("B:B"). _
+        Find(What:=箱キー, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 開始 」」」」」」」
+    If Range("N1") = 1 Then
+    Else
+    GoTo 通常処理
+    End If
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob7
+    End If
+    If dc > 0 Then
+    GoTo jobskip7
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob7:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    GoTo lastjob7
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    
+'出荷データコピー
+jobskip7:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.SumIf(Range("D:D"), 0)
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+          
+'【共通】最終処理
+lastjob7:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+Exit Sub
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 終了 」」」」」」」
+
+通常処理:
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob
+    End If
+    If dc > 0 Then
+    GoTo jobskip
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    GoTo lastjob
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    MsgBox "【要確認】出荷データに異常があります。" & vbNewLine & _
+           "日別保存データを確認してください。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    
+'出荷データコピー
+jobskip:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.Sum(Range("D:D"))
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+    
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+    MsgBox "【更新完了】" & vbNewLine & "　" & vbNewLine & _
+           "　対象名：" & fKey & vbNewLine & _
+           "　出荷日：" & sd & vbNewLine & "　出荷数：" & kensu
+          
+'【共通】最終処理
+lastjob:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+'*****************************************************************
+'**********ピッキング表⇒生産表 データ更新********* 終了 *********
+End Sub
+Sub イトーヨーカドー更新()
+
+'**********ピッキング表⇒生産表 データ更新********* 開始 *********
+'*****************************************************************
+    Application.ScreenUpdating = False
+    Dim koushin As String, sd As Date, fKey As String, fRange As Range
+    koushin = "イトーヨーカドー_ピッキング表"
+    sd = Workbooks("生産表.xlsm").Sheets("受注入力").Range("A1")
+    fKey = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set fRange = Range("B:B").Find(What:=fKey, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    If (fRange Is Nothing) Then
+    MsgBox "　『" & fKey & "』" & "が見つかりません。" & _
+           "　生産表『B列』を確認してください。"
+    Exit Sub
+    Else
+    End If
+    
+'宣言
+    Dim pd As Date, dc As Integer, bpn As String, cpd As Integer, _
+        shukka As Integer, kensu As Integer
+    Dim 件数 As Integer, 箱キー As String, 箱レンジ As Range
+    箱キー = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set 箱レンジ = Worksheets("箱数履歴").Range("B:B"). _
+        Find(What:=箱キー, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 開始 」」」」」」」
+    If Range("N1") = 1 Then
+    Else
+    GoTo 通常処理
+    End If
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob7
+    End If
+    If dc > 0 Then
+    GoTo jobskip7
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob7:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    GoTo lastjob7
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    
+'出荷データコピー
+jobskip7:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.SumIf(Range("D:D"), 0)
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+          
+'【共通】最終処理
+lastjob7:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+Exit Sub
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 終了 」」」」」」」
+
+通常処理:
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob
+    End If
+    If dc > 0 Then
+    GoTo jobskip
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    GoTo lastjob
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    MsgBox "【要確認】出荷データに異常があります。" & vbNewLine & _
+           "日別保存データを確認してください。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    
+'出荷データコピー
+jobskip:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.Sum(Range("D:D"))
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+    
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+    MsgBox "【更新完了】" & vbNewLine & "　" & vbNewLine & _
+           "　対象名：" & fKey & vbNewLine & _
+           "　出荷日：" & sd & vbNewLine & "　出荷数：" & kensu
+          
+'【共通】最終処理
+lastjob:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+'*****************************************************************
+'**********ピッキング表⇒生産表 データ更新********* 終了 *********
+End Sub
+Sub CGC北陸更新()
+
+'**********ピッキング表⇒生産表 データ更新********* 開始 *********
+'*****************************************************************
+    Application.ScreenUpdating = False
+    Dim koushin As String, sd As Date, fKey As String, fRange As Range
+    koushin = "CGC北陸_ピッキング表"
+    sd = Workbooks("生産表.xlsm").Sheets("受注入力").Range("A1")
+    fKey = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set fRange = Range("B:B").Find(What:=fKey, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    If (fRange Is Nothing) Then
+    MsgBox "　『" & fKey & "』" & "が見つかりません。" & _
+           "　生産表『B列』を確認してください。"
+    Exit Sub
+    Else
+    End If
+    
+'宣言
+    Dim pd As Date, dc As Integer, bpn As String, cpd As Integer, _
+        shukka As Integer, kensu As Integer
+    Dim 件数 As Integer, 箱キー As String, 箱レンジ As Range
+    箱キー = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set 箱レンジ = Worksheets("箱数履歴").Range("B:B"). _
+        Find(What:=箱キー, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 開始 」」」」」」」
+    If Range("N1") = 1 Then
+    Else
+    GoTo 通常処理
+    End If
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob7
+    End If
+    If dc > 0 Then
+    GoTo jobskip7
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob7:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    GoTo lastjob7
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    
+'出荷データコピー
+jobskip7:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.SumIf(Range("D:D"), 0)
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+          
+'【共通】最終処理
+lastjob7:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+Exit Sub
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 終了 」」」」」」」
+
+通常処理:
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob
+    End If
+    If dc > 0 Then
+    GoTo jobskip
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    GoTo lastjob
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    MsgBox "【要確認】出荷データに異常があります。" & vbNewLine & _
+           "日別保存データを確認してください。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    
+'出荷データコピー
+jobskip:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.Sum(Range("D:D"))
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+    
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+    MsgBox "【更新完了】" & vbNewLine & "　" & vbNewLine & _
+           "　対象名：" & fKey & vbNewLine & _
+           "　出荷日：" & sd & vbNewLine & "　出荷数：" & kensu
+          
+'【共通】最終処理
+lastjob:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+'*****************************************************************
+'**********ピッキング表⇒生産表 データ更新********* 終了 *********
+End Sub
+Sub 東武ストア更新()
+
+'**********ピッキング表⇒生産表 データ更新********* 開始 *********
+'*****************************************************************
+    Application.ScreenUpdating = False
+    Dim koushin As String, sd As Date, fKey As String, fRange As Range
+    koushin = "東武ストア_ピッキング表"
+    sd = Workbooks("生産表.xlsm").Sheets("受注入力").Range("A1")
+    fKey = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set fRange = Range("B:B").Find(What:=fKey, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    If (fRange Is Nothing) Then
+    MsgBox "　『" & fKey & "』" & "が見つかりません。" & _
+           "　生産表『B列』を確認してください。"
+    Exit Sub
+    Else
+    End If
+    
+'宣言
+    Dim pd As Date, dc As Integer, bpn As String, cpd As Integer, _
+        shukka As Integer, kensu As Integer
+    Dim 件数 As Integer, 箱キー As String, 箱レンジ As Range
+    箱キー = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set 箱レンジ = Worksheets("箱数履歴").Range("B:B"). _
+        Find(What:=箱キー, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 開始 」」」」」」」
+    If Range("N1") = 1 Then
+    Else
+    GoTo 通常処理
+    End If
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob7
+    End If
+    If dc > 0 Then
+    GoTo jobskip7
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob7:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    GoTo lastjob7
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    
+'出荷データコピー
+jobskip7:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.SumIf(Range("D:D"), 0)
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+          
+'【共通】最終処理
+lastjob7:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+Exit Sub
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 終了 」」」」」」」
+
+通常処理:
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob
+    End If
+    If dc > 0 Then
+    GoTo jobskip
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    GoTo lastjob
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    MsgBox "【要確認】出荷データに異常があります。" & vbNewLine & _
+           "日別保存データを確認してください。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    
+'出荷データコピー
+jobskip:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.Sum(Range("D:D"))
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+    
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+    MsgBox "【更新完了】" & vbNewLine & "　" & vbNewLine & _
+           "　対象名：" & fKey & vbNewLine & _
+           "　出荷日：" & sd & vbNewLine & "　出荷数：" & kensu
+          
+'【共通】最終処理
+lastjob:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+'*****************************************************************
+'**********ピッキング表⇒生産表 データ更新********* 終了 *********
+End Sub
+Sub 原信更新()
+
+'**********ピッキング表⇒生産表 データ更新********* 開始 *********
+'*****************************************************************
+    Application.ScreenUpdating = False
+    Dim koushin As String, sd As Date, fKey As String, fRange As Range
+    koushin = "原信_ピッキング表"
+    sd = Workbooks("生産表.xlsm").Sheets("受注入力").Range("A1")
+    fKey = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set fRange = Range("B:B").Find(What:=fKey, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    If (fRange Is Nothing) Then
+    MsgBox "　『" & fKey & "』" & "が見つかりません。" & _
+           "　生産表『B列』を確認してください。"
+    Exit Sub
+    Else
+    End If
+    
+'宣言
+    Dim pd As Date, dc As Integer, bpn As String, cpd As Integer, _
+        shukka As Integer, kensu As Integer
+    Dim 件数 As Integer, 箱キー As String, 箱レンジ As Range
+    箱キー = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set 箱レンジ = Worksheets("箱数履歴").Range("B:B"). _
+        Find(What:=箱キー, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 開始 」」」」」」」
+    If Range("N1") = 1 Then
+    Else
+    GoTo 通常処理
+    End If
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob7
+    End If
+    If dc > 0 Then
+    GoTo jobskip7
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob7:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    GoTo lastjob7
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    
+'出荷データコピー
+jobskip7:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.SumIf(Range("D:D"), 0)
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+          
+'【共通】最終処理
+lastjob7:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+Exit Sub
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 終了 」」」」」」」
+
+通常処理:
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob
+    End If
+    If dc > 0 Then
+    GoTo jobskip
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    GoTo lastjob
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    MsgBox "【要確認】出荷データに異常があります。" & vbNewLine & _
+           "日別保存データを確認してください。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    
+'出荷データコピー
+jobskip:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.Sum(Range("D:D"))
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+    
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+    MsgBox "【更新完了】" & vbNewLine & "　" & vbNewLine & _
+           "　対象名：" & fKey & vbNewLine & _
+           "　出荷日：" & sd & vbNewLine & "　出荷数：" & kensu
+          
+'【共通】最終処理
+lastjob:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+'*****************************************************************
+'**********ピッキング表⇒生産表 データ更新********* 終了 *********
+End Sub
+Sub フレッセイ更新()
+
+'**********ピッキング表⇒生産表 データ更新********* 開始 *********
+'*****************************************************************
+    Application.ScreenUpdating = False
+    Dim koushin As String, sd As Date, fKey As String, fRange As Range
+    koushin = "CGC_ピッキング表"
+    sd = Workbooks("生産表.xlsm").Sheets("受注入力").Range("A1")
+    fKey = "フレッセイ" '直打ち
+    Set fRange = Range("B:B").Find(What:=fKey, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    If (fRange Is Nothing) Then
+    MsgBox "　『" & fKey & "』" & "が見つかりません。" & _
+           "　生産表『B列』を確認してください。"
+    Exit Sub
+    Else
+    End If
+    
+'宣言
+    Dim pd As Date, dc As Integer, bpn As String, cpd As Integer, _
+        shukka As Integer, kensu As Integer
+    Dim 件数 As Integer, 箱キー As String, 箱レンジ As Range
+    箱キー = "フレッセイ" '直打ち
+    Set 箱レンジ = Worksheets("箱数履歴").Range("B:B"). _
+        Find(What:=箱キー, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 開始 」」」」」」」
+    If Range("N1") = 1 Then
+    Else
+    GoTo 通常処理
+    End If
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継(フレッセイ)").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob7
+    End If
+    If dc > 0 Then
+    GoTo jobskip7
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob7:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    GoTo lastjob7
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継(フレッセイ)").Select
+    If Range("B2") = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    
+'出荷データコピー
+jobskip7:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.SumIf(Range("D:D"), 0)
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 2, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継(フレッセイ)").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+          
+'【共通】最終処理
+lastjob7:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 2, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+Exit Sub
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 終了 」」」」」」」
+
+通常処理:
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継(フレッセイ)").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob
+    End If
+    If dc > 0 Then
+    GoTo jobskip
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    GoTo lastjob
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    MsgBox "【要確認】出荷データに異常があります。" & vbNewLine & _
+           "日別保存データを確認してください。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    
+'出荷データコピー
+jobskip:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.Sum(Range("D:D"))
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 2, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継(フレッセイ)").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+    
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+    MsgBox "【更新完了】" & vbNewLine & "　" & vbNewLine & _
+           "　対象名：" & fKey & vbNewLine & _
+           "　出荷日：" & sd & vbNewLine & "　出荷数：" & kensu
+          
+'【共通】最終処理
+lastjob:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 2, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+'*****************************************************************
+'**********ピッキング表⇒生産表 データ更新********* 終了 *********
+End Sub
+Sub セイミヤ更新()
+
+'**********ピッキング表⇒生産表 データ更新********* 開始 *********
+'*****************************************************************
+    Application.ScreenUpdating = False
+    Dim koushin As String, sd As Date, fKey As String, fRange As Range
+    koushin = "セイミヤ_ピッキング表"
+    sd = Workbooks("生産表.xlsm").Sheets("受注入力").Range("A1")
+    fKey = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set fRange = Range("B:B").Find(What:=fKey, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    If (fRange Is Nothing) Then
+    MsgBox "　『" & fKey & "』" & "が見つかりません。" & _
+           "　生産表『B列』を確認してください。"
+    Exit Sub
+    Else
+    End If
+    
+'宣言
+    Dim pd As Date, dc As Integer, bpn As String, cpd As Integer, _
+        shukka As Integer, kensu As Integer
+    Dim 件数 As Integer, 箱キー As String, 箱レンジ As Range
+    箱キー = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set 箱レンジ = Worksheets("箱数履歴").Range("B:B"). _
+        Find(What:=箱キー, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 開始 」」」」」」」
+    If Range("N1") = 1 Then
+    Else
+    GoTo 通常処理
+    End If
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob7
+    End If
+    If dc > 0 Then
+    GoTo jobskip7
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob7:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    GoTo lastjob7
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    
+'出荷データコピー
+jobskip7:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.SumIf(Range("D:D"), 0)
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+          
+'【共通】最終処理
+lastjob7:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+Exit Sub
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 終了 」」」」」」」
+
+通常処理:
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob
+    End If
+    If dc > 0 Then
+    GoTo jobskip
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    GoTo lastjob
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    MsgBox "【要確認】出荷データに異常があります。" & vbNewLine & _
+           "日別保存データを確認してください。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    
+'出荷データコピー
+jobskip:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.Sum(Range("D:D"))
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+    
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+    MsgBox "【更新完了】" & vbNewLine & "　" & vbNewLine & _
+           "　対象名：" & fKey & vbNewLine & _
+           "　出荷日：" & sd & vbNewLine & "　出荷数：" & kensu
+          
+'【共通】最終処理
+lastjob:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+'*****************************************************************
+'**********ピッキング表⇒生産表 データ更新********* 終了 *********
+End Sub
+Sub ヤオコー更新()
+
+'**********ピッキング表⇒生産表 データ更新********* 開始 *********
+'*****************************************************************
+    Application.ScreenUpdating = False
+    Dim koushin As String, sd As Date, fKey As String, fRange As Range
+    koushin = "ヤオコー_ピッキング表"
+    sd = Workbooks("生産表.xlsm").Sheets("受注入力").Range("A1")
+    fKey = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set fRange = Range("B:B").Find(What:=fKey, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    If (fRange Is Nothing) Then
+    MsgBox "　『" & fKey & "』" & "が見つかりません。" & _
+           "　生産表『B列』を確認してください。"
+    Exit Sub
+    Else
+    End If
+    
+'宣言
+    Dim pd As Date, dc As Integer, bpn As String, cpd As Integer, _
+        shukka As Integer, kensu As Integer
+    Dim 件数 As Integer, 箱キー As String, 箱レンジ As Range
+    箱キー = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set 箱レンジ = Worksheets("箱数履歴").Range("B:B"). _
+        Find(What:=箱キー, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 開始 」」」」」」」
+    If Range("N1") = 1 Then
+    Else
+    GoTo 通常処理
+    End If
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob7
+    End If
+    If dc > 0 Then
+    GoTo jobskip7
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob7:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    GoTo lastjob7
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    
+'出荷データコピー
+jobskip7:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.SumIf(Range("D:D"), 0)
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+          
+'【共通】最終処理
+lastjob7:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+Exit Sub
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 終了 」」」」」」」
+
+通常処理:
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob
+    End If
+    If dc > 0 Then
+    GoTo jobskip
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    GoTo lastjob
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    MsgBox "【要確認】出荷データに異常があります。" & vbNewLine & _
+           "日別保存データを確認してください。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    
+'出荷データコピー
+jobskip:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.Sum(Range("D:D"))
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+    
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+    MsgBox "【更新完了】" & vbNewLine & "　" & vbNewLine & _
+           "　対象名：" & fKey & vbNewLine & _
+           "　出荷日：" & sd & vbNewLine & "　出荷数：" & kensu
+          
+'【共通】最終処理
+lastjob:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+'*****************************************************************
+'**********ピッキング表⇒生産表 データ更新********* 終了 *********
+End Sub
+Sub CGC更新()
+
+'**********ピッキング表⇒生産表 データ更新********* 開始 *********
+'*****************************************************************
+    Application.ScreenUpdating = False
+    Dim koushin As String, sd As Date, fKey As String, fRange As Range
+    koushin = "CGC_ピッキング表"
+    sd = Workbooks("生産表.xlsm").Sheets("受注入力").Range("A1")
+    fKey = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set fRange = Range("B:B").Find(What:=fKey, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    If (fRange Is Nothing) Then
+    MsgBox "　『" & fKey & "』" & "が見つかりません。" & _
+           "　生産表『B列』を確認してください。"
+    Exit Sub
+    Else
+    End If
+    
+'宣言
+    Dim pd As Date, dc As Integer, bpn As String, cpd As Integer, _
+        shukka As Integer, kensu As Integer
+    Dim 件数 As Integer, 箱キー As String, 箱レンジ As Range
+    箱キー = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set 箱レンジ = Worksheets("箱数履歴").Range("B:B"). _
+        Find(What:=箱キー, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 開始 」」」」」」」
+    If Range("N1") = 1 Then
+    Else
+    GoTo 通常処理
+    End If
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob7
+    End If
+    If dc > 0 Then
+    GoTo jobskip7
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob7:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    GoTo lastjob7
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    
+'出荷データコピー
+jobskip7:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.SumIf(Range("D:D"), 0)
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+          
+'【共通】最終処理
+lastjob7:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+Exit Sub
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 終了 」」」」」」」
+
+通常処理:
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob
+    End If
+    If dc > 0 Then
+    GoTo jobskip
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    GoTo lastjob
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    MsgBox "【要確認】出荷データに異常があります。" & vbNewLine & _
+           "日別保存データを確認してください。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    
+'出荷データコピー
+jobskip:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.Sum(Range("D:D"))
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+    
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+    MsgBox "【更新完了】" & vbNewLine & "　" & vbNewLine & _
+           "　対象名：" & fKey & vbNewLine & _
+           "　出荷日：" & sd & vbNewLine & "　出荷数：" & kensu
+         
+    Dim msg2, kesu2 As String
+    msg2 = "続けて『フレッセイ』のデータを更新します。" & vbNewLine & _
+           ""
+    kesu2 = MsgBox(msg2, 1, "出荷数量更新")
+    If kesu2 = 2 Then
+    MsgBox "『フレッセイ』のデータ更新をスキップしました。"
+    GoTo skip
+    Else
+    Call フレッセイ更新
+    End If
+    
+skip:
+'【共通】最終処理
+lastjob:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+'*****************************************************************
+'**********ピッキング表⇒生産表 データ更新********* 終了 *********
+End Sub
+Sub ニュークイック更新()
+ 
+'**********ピッキング表⇒生産表 データ更新********* 開始 *********
+'*****************************************************************
+    Application.ScreenUpdating = False
+    Dim koushin As String, sd As Date, fKey As String, fRange As Range
+    koushin = "ニュー･クイック_ピッキング表"
+    sd = Workbooks("生産表.xlsm").Sheets("受注入力").Range("A1")
+    fKey = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set fRange = Range("B:B").Find(What:=fKey, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    If (fRange Is Nothing) Then
+    MsgBox "　『" & fKey & "』" & "が見つかりません。" & _
+           "　生産表『B列』を確認してください。"
+    Exit Sub
+    Else
+    End If
+    
+'宣言
+    Dim pd As Date, dc As Integer, bpn As String, cpd As Integer, _
+        shukka As Integer, kensu As Integer
+    Dim 件数 As Integer, 箱キー As String, 箱レンジ As Range
+    箱キー = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set 箱レンジ = Worksheets("箱数履歴").Range("B:B"). _
+        Find(What:=箱キー, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 開始 」」」」」」」
+    If Range("N1") = 1 Then
+    Else
+    GoTo 通常処理
+    End If
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob7
+    End If
+    If dc > 0 Then
+    GoTo jobskip7
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob7:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    GoTo lastjob7
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    
+'出荷データコピー
+jobskip7:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.SumIf(Range("D:D"), 0)
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+          
+'【共通】最終処理
+lastjob7:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+Exit Sub
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 終了 」」」」」」」
+
+通常処理:
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob
+    End If
+    If dc > 0 Then
+    GoTo jobskip
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    GoTo lastjob
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    MsgBox "【要確認】出荷データに異常があります。" & vbNewLine & _
+           "日別保存データを確認してください。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    
+'出荷データコピー
+jobskip:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.Sum(Range("D:D"))
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+    
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+    MsgBox "【更新完了】" & vbNewLine & "　" & vbNewLine & _
+           "　対象名：" & fKey & vbNewLine & _
+           "　出荷日：" & sd & vbNewLine & "　出荷数：" & kensu
+         
+'【共通】最終処理
+lastjob:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+'*****************************************************************
+'**********ピッキング表⇒生産表 データ更新********* 終了 *********
+End Sub
+Sub 一括更新()
+
+'**********ピッキング表⇒生産表 データ更新********* 開始 *********
+'*****************************************************************
+    Application.ScreenUpdating = False
+'msgboxカットのために…
+    Range("N1").Select
+    ActiveCell.FormulaR1C1 = "1"
+    
+'更新マクロ一覧
+    イトーヨーカドー更新
+    コープデリ更新
+    オーケー更新
+    セイミヤ更新
+    CGC北陸更新
+    CGC更新
+    ミニストップ更新
+    フレッセイ更新
+    サミット更新
+    ライフ更新
+    東武ストア更新
+    原信更新
+        
+'msgboxカットを元に戻す
+    Range("N1").Select
+    Selection.ClearContents
+
+'一括更新終了確認
+    MsgBox "一括更新完了" & vbNewLine & "更新結果は個別に確認してください。"
+    Application.ScreenUpdating = True
+'*****************************************************************
+'**********ピッキング表⇒生産表 データ更新********* 終了 *********
+End Sub
+Sub ヨークマート更新()
+
+'**********ピッキング表⇒生産表 データ更新********* 開始 *********
+'*****************************************************************
+    Application.ScreenUpdating = False
+    Dim koushin As String, sd As Date, fKey As String, fRange As Range
+    koushin = "ヨークマート_ピッキング表"
+    sd = Workbooks("生産表.xlsm").Sheets("受注入力").Range("A1")
+    fKey = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set fRange = Range("B:B").Find(What:=fKey, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    If (fRange Is Nothing) Then
+    MsgBox "　『" & fKey & "』" & "が見つかりません。" & _
+           "　生産表『B列』を確認してください。"
+    Exit Sub
+    Else
+    End If
+    
+'宣言
+    Dim pd As Date, dc As Integer, bpn As String, cpd As Integer, _
+        shukka As Integer, kensu As Integer
+    Dim 件数 As Integer, 箱キー As String, 箱レンジ As Range
+    箱キー = WorksheetFunction.Substitute(koushin, "_ピッキング表", "")
+    Set 箱レンジ = Worksheets("箱数履歴").Range("B:B"). _
+        Find(What:=箱キー, LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByRows)
+    
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 開始 」」」」」」」
+    If Range("N1") = 1 Then
+    Else
+    GoTo 通常処理
+    End If
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob7
+    End If
+    If dc > 0 Then
+    GoTo jobskip7
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob7:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    GoTo lastjob7
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob7
+    End If
+    
+'出荷データコピー
+jobskip7:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.SumIf(Range("D:D"), 0)
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+          
+'【共通】最終処理
+lastjob7:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+Exit Sub
+'」」」」 MsgBoxカットver. 」」」 一括処理用 」」 終了 」」」」」」」
+
+通常処理:
+'ピッキング表本体チェック
+    Workbooks.Open Filename:="\\AFNEWT320-KYOYU\社内共有\AFSKS\ピッキング表\" & koushin & _
+                             ".xlsm", UpdateLinks:=0, ReadOnly:=True
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    pd = Range("B2")
+    dc = WorksheetFunction.Sum(Range("D:D"))
+    If pd = sd Then
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo nextjob
+    End If
+    If dc > 0 Then
+    GoTo jobskip
+    Else
+    ActiveWorkbook.Close SaveChanges:=False
+    End If
+    
+'ピッキング表日付別コピー先チェック
+nextjob:
+    bpn = "\\AFNEWT320-KYOYU\社内共有\AFSKS\データ保管\" & Format(sd + 1, "ggge年") & "\" & _
+           Format(sd + 1, "m月") & "\" & Format(sd + 1, "m.d") & _
+           "\" & koushin & ".xlsm"
+    If Dir(bpn) <> "" Then
+    Workbooks.Open bpn, UpdateLinks:=0, ReadOnly:=True
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    GoTo lastjob
+    End If
+    Windows(koushin & ".xlsm").Activate
+    Sheets("データ中継").Select
+    If Range("B2") = sd Then
+    Else
+    MsgBox "【要確認】出荷データに異常があります。" & vbNewLine & _
+           "日別保存データを確認してください。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    cpd = WorksheetFunction.Sum(Range("D:D"))
+    If cpd > 0 Then
+    Else
+    MsgBox "【要確認】出荷データがありません。" & vbNewLine & _
+           "　" & vbNewLine & _
+           "　対象名：" & koushin & vbNewLine & _
+           "　出荷日：" & sd
+    ActiveWorkbook.Close SaveChanges:=False
+    GoTo lastjob
+    End If
+    
+'出荷データコピー
+jobskip:
+    shukka = WorksheetFunction.CountIf(Range("F:F"), 0)
+    kensu = WorksheetFunction.Sum(Range("D:D"))
+    Range(Cells(5, 4), Cells(5 + shukka, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("受注入力").Select
+    
+'貼り付け位置検索
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+    
+'箱数更新＠＠＠＠＠
+    Windows(koushin & ".xlsm").Activate
+    
+    Sheets("箱数中継").Select
+    件数 = WorksheetFunction.CountIf(Range("F:F"), 0)
+    Range(Cells(5, 4), Cells(5 + 件数, 4)).Select
+    Selection.Copy
+    Windows("生産表.xlsm").Activate
+    Sheets("箱数履歴").Select
+    
+'貼り付け位置検索
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    
+'データ貼り付け
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+        :=False, Transpose:=False
+    Application.CutCopyMode = False
+          
+    Cells(箱レンジ.Row + 1, 箱レンジ.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = 箱レンジ.Row
+        .ScrollColumn = 箱レンジ.Column - 1
+    End With
+    Sheets("受注入力").Select
+'＠＠＠＠＠
+    
+    Workbooks(koushin & ".xlsm").Close SaveChanges:=False
+    MsgBox "【更新完了】" & vbNewLine & "　" & vbNewLine & _
+           "　対象名：" & fKey & vbNewLine & _
+           "　出荷日：" & sd & vbNewLine & "　出荷数：" & kensu
+          
+'【共通】最終処理
+lastjob:
+    Windows("生産表.xlsm").Activate
+    Cells(fRange.Row + 1, fRange.Column + 2).Select
+    With ActiveWindow
+        .ScrollRow = fRange.Row
+        .ScrollColumn = fRange.Column - 1
+    End With
+    Application.ScreenUpdating = True
+'*****************************************************************
+'**********ピッキング表⇒生産表 データ更新********* 終了 *********
+End Sub

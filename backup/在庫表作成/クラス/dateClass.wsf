@@ -1,0 +1,15 @@
+Option Explicit
+   Public date_now As Variant
+   Public date_next As Variant
+   Public date_last As Variant
+   Public H_AL_nowMonth As Variant
+   Public H_AL_nextMonth As Variant
+   Public G_now_date As Variant
+   Public G_last_date As Variant
+   Public G_next_date As Variant
+   Public kowake_now_date As Variant
+   Public kowake_last_date As Variant
+   Public kowake_next_date As Variant
+
+
+
