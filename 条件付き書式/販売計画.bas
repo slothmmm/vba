@@ -5,6 +5,8 @@ Sub 条件付き書式_main()
 End Sub
 
 Sub 条件付き書式_1シート追加()
+    Call 条件付き書式_10_新規か
+    Call 条件付き書式_11_終売か
     Call 条件付き書式_01_未登録か
     Call 条件付き書式_02_仮か
     Call 条件付き書式_03_本か
@@ -12,6 +14,9 @@ Sub 条件付き書式_1シート追加()
     Call 条件付き書式_05_エラーか
     Call 条件付き書式_06_○か
     Call 条件付き書式_07_Xか
+    Call 条件付き書式_08_0以上か
+    Call 条件付き書式_09_日付
+
 End Sub
 
 Sub 条件付き書式の削除と追加()
@@ -67,14 +72,42 @@ End Sub
 
 Sub 条件付き書式_06_○か()
     Dim fc As FormatCondition
-      Set fc = Range("$BD:$BG").FormatConditions.Add(Type:=xlCellValue, Operator:=xlEqual, Formula1:="=""○""")
+      Set fc = Range("$BD:$BH").FormatConditions.Add(Type:=xlCellValue, Operator:=xlEqual, Formula1:="=""○""")
       fc.Interior.Color = RGB(0, 0, 255)
       fc.Font.Color = RGB(255, 255, 255)
 End Sub
 
 Sub 条件付き書式_07_Xか()
     Dim fc As FormatCondition
-      Set fc = Range("$BD:$BG").FormatConditions.Add(Type:=xlCellValue, Operator:=xlEqual, Formula1:="=""X""")
+      Set fc = Range("$BD:$BH").FormatConditions.Add(Type:=xlCellValue, Operator:=xlEqual, Formula1:="=""X""")
       fc.Interior.Color = RGB(255, 0, 0)
       fc.Font.Color = RGB(255, 255, 255)
 End Sub
+
+Sub 条件付き書式_08_0以上か()
+    Dim fc As FormatCondition
+       Set fc = Range("AY1:AY4").FormatConditions.Add(Type:=xlExpression, Formula1:="=AY1>=1")
+       fc.Interior.Color = RGB(255, 0, 0)
+       fc.Font.Color = RGB(255, 255, 255)
+End Sub
+
+Sub 条件付き書式_09_日付()
+    Dim fc As FormatCondition
+       Set fc = Range("$AG$8:$AI$8").FormatConditions.Add(Type:=xlExpression, Formula1:="=AG8=""""")
+       fc.Interior.Color = RGB(0, 0, 0)
+End Sub
+
+Sub 条件付き書式_10_新規か()
+    Dim fc As FormatCondition
+       Set fc = Range("$A:$D").FormatConditions.Add(Type:=xlExpression, Formula1:="=$BQ1=""新規""")
+       fc.Interior.Color = RGB(255, 0, 0)
+End Sub
+
+Sub 条件付き書式_11_終売か()
+    Dim fc As FormatCondition
+       Set fc = Range("$A:$D").FormatConditions.Add(Type:=xlExpression, Formula1:="=$BQ1=""終売""")
+       fc.Interior.Color = RGB(146, 208, 80)
+End Sub
+
+
+
