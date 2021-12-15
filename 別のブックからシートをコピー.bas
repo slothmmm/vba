@@ -32,12 +32,16 @@ Sub sheet_copy()
     'ブックを開く
     Workbooks.Open FilePath & "\aaa.xlsm" 'コピー元のブックのパス
     'シートをコピー
-    Workbooks("aaa.xlsm").Worksheets("a").Copy after:=ThisWorkbook.Worksheets("c")
+    Workbooks("aaa.xlsm").Worksheets("a").Copy after:=ThisWorkbook.Worksheets("a")
+    'シート名変更
+    Worksheets(2).Name = "a_copy"
     
     'ブックを閉じる
     Application.DisplayAlerts = False
     'コピー元のブックを閉じる(セーブしない)
     Workbooks("aaa.xlsm").Close savechanges:=False
+    
+
     
     Application.DisplayAlerts = True
     Application.ScreenUpdating = True
