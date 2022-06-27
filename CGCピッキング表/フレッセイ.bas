@@ -3,13 +3,13 @@ Sub webdata貼付_main()
     csv_ary = フレッセイcsv読み込み
     
     'JANコード検索　フレッセイ数量合算
-    For i = 1 To UBound(FM_ary)
-        For h = 0 To UBound(csv_ary)
+    For h = 0 To UBound(csv_ary)
+        For i = 1 To UBound(FM_ary)
             If FM_ary(i, 2) = csv_ary(h, 82) Then
-                FM_ary(i, 20) = csv_ary(h, 141)
+                FM_ary(i, 20) = Int(FM_ary(i, 20)) + Int(csv_ary(h, 141))
             End If
-        Next h
-    Next i
+        Next i
+    Next h
     
     ThisWorkbook.Worksheets("Webdata").Activate
     Range("A1").Select
@@ -85,7 +85,7 @@ Function csvファイル名探索() As Variant
     With CreateObject("Scripting.FileSystemObject")
         now_date = Year(Date) & Right("0" & Month(Date), 2) & Right("0" & Day(Date), 2) '現在の日付
         For Each f In .GetFolder(csvfilepath).Files
-            If f.Name Like "*" + now_date + "*" Then    'ファイル名に現在の日付が含まれているか
+            If f.Name Like "*" Then    '全てのデータを読み込む 20220531
                 filename(cnt, 0) = f.Name
                 filename(cnt, 1) = f.DateLastModified   '作成日はf.DateCreated 更新日はf.DateLastModified  アクセス日はf.DateLastAccessed
                 cnt = cnt + 1
@@ -226,5 +226,6 @@ Function csv探索() As Variant
     csv探索 = csvPath & "\" & filename(Max, 0)
     
 End Function
+
 
 
