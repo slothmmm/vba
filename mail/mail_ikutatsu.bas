@@ -1,93 +1,119 @@
-Sub メールボタン()
-    Set oApp = CreateObject("Outlook.Application")
-    Set myNameSpace = oApp.GetNamespace("MAPI")
-    Set myFolder = myNameSpace.GetDefaultFolder(6)
-    'myFolder.Display 'OUTLOOK起動
-    Set objMail = oApp.CreateItem(olMailItem)
+Sub ラベル印刷と計算()
+    Dim rc As VbMsgBoxResult
+    rc = MsgBox("①データ更新後、②印刷を行います。よろしいですか？", vbYesNo + vbQuestion)
+    If rc = vbNo Then
+        MsgBox "印刷を中止します", vbCritical
+        Exit Sub
+    End If
 
-    '入力シートからデータ抽出
-    Dim henList  As henClass
-    Set henList = 入力データ抽出()
-    Worksheets("入力").Activate
+    Call 形成用
+    Call ラベル印刷
 
-    'メールクラス
-    Dim mailList  As mailClass
-    Set mailList = New mailClass
-
-    'メール
-    mailList.meado = メール送信リスト()
-    mailList.kenmei = henList.bunrui + "変更" + " " + henList.syouCD
-    mailList.naiyou = Worksheets("メール文").Range("B2").Value + vbCrLf + henList.naiyouCD + henList.naiyouBuhin + vbCrLf + henList.naiyou + vbCrLf + vbCrLf + Worksheets("メール文").Range("B3").Value + vbCrLf + henList.iraiName
-
-    'メールへ反映
-    With objMail
-        .To = mailList.meado(0)
-        .CC = mailList.meado(1)
-        .Subject = mailList.kenmei
-        .Body = mailList.naiyou
-        .BodyFormat = 2
-        .Display            'OUTLOOK送信画面の起動
-    End With
-
-    Worksheets("入力").Activate
 End Sub
 
-Public Function メール送信リスト() As Variant
-    Worksheets("リスト").Activate
-    Dim meadoSeizoTemp As Range, meadoSystemTemp As Range, meadoEigyoTemp As Range, meadoKanriTemp As Range
+Sub ラベル印刷()
 
-    '「リスト」シートの一番下
-    Dim Last_Row_Seizo As Long, Last_Row_System As Long, Last_Row_kanri As Long
-    Last_Row_Seizo = Worksheets("リスト").Cells(Rows.Count, 5).End(xlUp).Row
-    Last_Row_System = Worksheets("リスト").Cells(Rows.Count, 7).End(xlUp).Row
-    Last_Row_kanri = Worksheets("リスト").Cells(Rows.Count, 14).End(xlUp).Row
+    Dim rc As VbMsgBoxResult
+    rc = MsgBox("データ更新を行わず、印刷を行います。IP67で印刷設定していますか？", vbYesNo + vbQuestion)
+    If rc = vbNo Then
+        MsgBox "印刷を中止します", vbCritical
+        Exit Sub
+    End If
+    
+    this_sheet_name = ActiveSheet.Name
 
-    'メアドそれぞれ取得
-    Set meadoSeizoTemp = Worksheets("リスト").Range(Cells(4, 5), Cells(Last_Row_Seizo, 5))
-    Set meadoSystemTemp = Worksheets("リスト").Range(Cells(4, 7), Cells(Last_Row_System, 7))
-    Set meadoKanriTemp = Worksheets("リスト").Range(Cells(4, 14), Cells(Last_Row_kanri, 14))
+    'プリンター選択確認
+    Dim myPrinter As String
+    myPrinter = Application.ActivePrinter
 
-    'メアドそれぞれ１文に成形
-    Dim meadoSeizo As String, meadoSystem As String, meadoEigyo As String, meadoKanri As String
-    Dim i As Long
-            '製造メアド
-            For i = 0 To UBound(meadoSeizoTemp(), 1)
-                If meadoSeizoTemp(i) = "" Then
+    If myPrinter Like "*67*" Then
+        Application.ActivePrinter = myPrinter
+    Else
+        MsgBox myPrinter & "が選択されています。" & vbCrLf & "プリンターの設定をIP190へ変更して下さい。"
+        Exit Sub
+    End If
 
-                Else
-                    meadoSeizo = meadoSeizo + meadoSeizoTemp(i)
-                    meadoSeizo = meadoSeizo + ";"
-                End If
-            Next i
+    Worksheets("センターマスター").Activate
+    E_LastRow = Cells(Rows.Count, 5).End(xlUp).Row  'E列の最終行取得
+    centerList = Worksheets("センターマスター").Range(Cells(4, 5), Cells(E_LastRow, 5))   'シートデータ取得
 
-            'システムメアド
-            For i = 0 To UBound(meadoSystemTemp(), 1)
-                If meadoSystemTemp(i) = "" Then
+    Dim ListArray(1) As String
+    ListArray(0) = "START"
+    ListArray(1) = ""
 
-                Else
-                    meadoSystem = meadoSystem + meadoSystemTemp(i)
-                    meadoSystem = meadoSystem + ";"
-                End If
-            Next i
+    Worksheets(this_sheet_name).Activate
+    Call フィルタークリア
+    
+    For cen = 1 To UBound(centerList)
+        Worksheets(this_sheet_name).Range("C7") = cen
+        
+        dup = 重複なしリスト(cen)
+        
+        Worksheets(this_sheet_name).Activate
+        
+        If cen = 1 Then
+            MsgBox "※沼津の印刷を開始します。"
+        End If
+        
+        If cen = 2 Then
+            MsgBox "※森の里の印刷を開始します。"
+        End If
+        
+        For i = 0 To UBound(dup)
+            
+            '１番目の商品のみ「センター区切り」を印刷する
+            If i = 0 Then
+                'ListArray(0) = "START"
+                 ListArray(0) = "これはフィルターにかからない文字列"    'STARTいらなそうなので
+            Else
+                ListArray(0) = "これはフィルターにかからない文字列"
+            End If
+        
+            If dup(i) <> "" Then
+                ListArray(1) = dup(i)
+            Else
+                 GoTo Continue ' Continue: の行へ処理を飛ばす
+            End If
+        
+            With ActiveSheet
+                .Range("B10").Select
+                'If .FilterMode Then .ShowAllData
+                .Range("B10").AutoFilter Field:=3, Criteria1:=ListArray, Operator:=xlFilterValues
+                'Application.CalculateFull
+                Application.Calculate   '再計算
+            End With
+            ActiveSheet.PrintOut
+Continue:                 ' GoTo Continue の後はここから処理が行われる
+        Next i
+    Next cen
+    
+    Call フィルタークリア
+    MsgBox "ラベル印刷が完了しました"
+End Sub
 
-            '管理メアド
-            For i = 0 To UBound(meadoKanriTemp(), 1)
-                If meadoKanriTemp(i) = "" Then
-
-                Else
-                    meadoKanri = meadoKanri + meadoKanriTemp(i)
-                    meadoKanri = meadoKanri + ";"
-                End If
-            Next i
-
-    '送信先メアドまとめ
-    Dim meadoMatome(1) As String
-    '宛先
-        meadoMatome(0) = meadoMatome(0) + meadoKanri
-    'CC
-        meadoMatome(1) = meadoMatome(1) + meadoSeizo
-        meadoMatome(1) = meadoMatome(1) + meadoSystem
-
-    メール送信リスト = meadoMatome
-
+Function 重複なしリスト(centerNo As Variant) As Variant
+    
+    Worksheets("形成").Activate
+    
+    Dim 辞書 As Object
+    Set 辞書 = CreateObject("Scripting.Dictionary")
+    A_LastRow = Cells(Rows.Count, 1).End(xlUp).Row  'A列の最終行取得
+    
+    dataList = Worksheets("形成").Range(Cells(1, 1), Cells(A_LastRow, 12))
+    
+    For i = 1 To A_LastRow
+        If IsNumeric(dataList(i, 11)) Then
+            If centerNo = Int(Left(dataList(i, 11), Len(dataList(i, 11)) - 4)) Then
+                '辞書に登録されていない時は
+                 If Not 辞書.Exists(dataList(i, 3)) Then
+                     '辞書に登録する。
+                     辞書(dataList(i, 3)) = Empty
+                 End If
+            End If
+        End If
+    Next i
+    
+    重複なしリスト = 辞書.keys
+    
 End Function
+

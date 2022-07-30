@@ -1,20 +1,42 @@
 Sub all更新()
-    Call 一括更新_CGC
-    Call 一括更新_CGC北陸
-    Call 一括更新_イトーヨーカドー
-    Call 一括更新_オーケー
-    Call 一括更新_コープデリ
-    Call 一括更新_コープデリフローズン
-    Call 一括更新_セイミヤ
-    Call 一括更新_ニュークイック
-    Call 一括更新_フレッセイ
-    Call 一括更新_ヤオコー
-    Call 一括更新_ユーコープ
-    Call 一括更新_ライフ
-    Call 一括更新_原信
-    Call 一括更新_東武ストア
-    Call 一括更新_イクタツ
-    Call 一括更新_SMコープデリ
+'    Call 一括更新_CGC
+'    Call 一括更新_CGC北陸
+'    Call 一括更新_イトーヨーカドー
+'    Call 一括更新_オーケー
+'    Call 一括更新_コープデリ
+'    Call 一括更新_コープデリフローズン
+'    Call 一括更新_セイミヤ
+'    Call 一括更新_ニュークイック
+'    Call 一括更新_フレッセイ
+'    Call 一括更新_ヤオコー
+'    Call 一括更新_ユーコープ
+'    Call 一括更新_ライフ
+'    Call 一括更新_原信
+'    Call 一括更新_東武ストア
+'    Call 一括更新_イクタツ
+'    Call 一括更新_SMコープデリ
+
+    Call 一括生産表更新main("CGC", False)
+    Call 一括生産表更新main("CGC北陸", False)
+    Call 一括生産表更新main("イトーヨーカドー", False)
+    Call 一括生産表更新main("オーケー", False)
+    Call 一括生産表更新main("コープデリ", False)
+    Call 一括生産表更新main("コープデリフローズン", False)
+    Call 一括生産表更新main("セイミヤ", False)
+    Call 一括生産表更新main("ニュー･クイック", False)
+    Call 一括生産表更新main("フレッセイ", False)
+    Call 一括生産表更新main("ヤオコー", False)
+    Call 一括生産表更新main("ユーコープ", False)
+    Call 一括生産表更新main("ライフ", False)
+    Call 一括生産表更新main("原信", False)
+    Call 一括生産表更新main("東武ストア", False)
+    Call 一括生産表更新main("イクタツ", False)
+    Call 一括生産表更新main("SMコープデリ", False)
+
+    Application.ScreenUpdating = True                  '画面起動
+    Application.Calculation = xlCalculationAutomatic  '自動計算
+    ActiveSheet.Protect       '保護
+
 End Sub
 
 Sub 一括更新_CGC()
@@ -116,7 +138,7 @@ End Sub
 
 
 
-Function 一括生産表更新main(Customer_name As Variant)
+Function 一括生産表更新main(Customer_name As Variant, Optional keisan As Boolean = True)
     
     'アクティブ
     Worksheets("受注入力").Activate
@@ -188,16 +210,16 @@ Function 一括生産表更新main(Customer_name As Variant)
     'D列へ貼付
     Range(Cells(A_start_row, 4), Cells(A_END_row, 4)) = D_column
     
-    If Customer_name = "CGC" Then
-        'pass
-    ElseIf 1 = 1 Then
-        Application.ScreenUpdating = True                  '画面起動
-        Application.Calculation = xlCalculationAutomatic  '自動計算
-        ActiveSheet.Protect       '保護
+    If keisan Then
+        If Customer_name = "CGC" Then
+            'pass
+        ElseIf 1 = 1 Then
+            Application.ScreenUpdating = True                  '画面起動
+            Application.Calculation = xlCalculationAutomatic  '自動計算
+            ActiveSheet.Protect       '保護
+        End If
     End If
         
-'    Debug.Print LastRow
-'    Debug.Print 12
 End Function
 
 Function 一括csv読み込み(Customer_name As Variant) As Variant

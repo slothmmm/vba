@@ -620,7 +620,9 @@ Sub コープデリ全表示()
     Cells.EntireColumn.Hidden = False
     Range("F8").Select
     Application.ScreenUpdating = True
+
 End Sub
+
 Sub コープデリ非表示()
 
     msg = "Sheet内使用箇所以外非表示" & Chr$(10) & _
